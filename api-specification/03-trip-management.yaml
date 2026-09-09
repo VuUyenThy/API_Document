@@ -1,0 +1,298 @@
+openapi: 3.0.3
+info:
+  title: CAB System - Trip Management API
+  version: 1.0.0
+  description: |
+    API specification for booking a trip, matching drivers, accepting/rejecting ride requests,
+    and tracking trip lifecycle from pickup to completion.
+    Derived functional requirements: FR-01, FR-02, FR-03, FR-07, FR-08, FR-09.
+
+servers:
+  - url: https://api.cab-system.local/v1
+    description: CAB API Server
+
+x-functional-requirements:
+  - FR-01
+  - FR-02
+  - FR-03
+  - FR-07
+  - FR-08
+  - FR-09
+
+paths:
+  /trips:
+    post:
+      summary: Khách hàng đặt chuyến mới
+      operationId: createTripRequest
+      tags: [Trip]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTripRequest'
+      responses:
+        '201':
+          description: Yêu cầu đặt chuyến được tạo
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Trip'
+
+  /trips/{tripId}:
+    get:
+      summary: Lấy chi tiết chuyến đi
+      operationId: getTripById
+      tags: [Trip]
+      parameters:
+        - $ref: '#/components/parameters/TripId'
+      responses:
+        '200':
+          description: Chi tiết chuyến đi
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Trip'
+    patch:
+      summary: Cập nhật trạng thái chuyến đi
+      operationId: updateTripStatus
+      tags: [Trip]
+      parameters:
+        - $ref: '#/components/parameters/TripId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TripStatusUpdateRequest'
+      responses:
+        '200':
+          description: Trạng thái cập nhật thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Trip'
+
+  /trips/{tripId}/driver-offers:
+    get:
+      summary: Lấy danh sách tài xế đề xuất cho chuyến
+      operationId: getTripDriverOffers
+      tags: [Trip]
+      parameters:
+        - $ref: '#/components/parameters/TripId'
+      responses:
+        '200':
+          description: Danh sách đề xuất tài xế
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DriverOffer'
+
+  /trips/{tripId}/assign:
+    post:
+      summary: Chọn tài xế để phân công
+      operationId: assignDriverToTrip
+      tags: [Trip]
+      parameters:
+        - $ref: '#/components/parameters/TripId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AssignDriverRequest'
+      responses:
+        '200':
+          description: Phân công tài xế thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Trip'
+
+  /trips/{tripId}/accept:
+    post:
+      summary: Tài xế chấp nhận chuyến
+      operationId: acceptTrip
+      tags: [Trip]
+      parameters:
+        - $ref: '#/components/parameters/TripId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DriverActionRequest'
+      responses:
+        '200':
+          description: Tài xế đã chấp nhận chuyến
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Trip'
+
+  /trips/{tripId}/reject:
+    post:
+      summary: Tài xế từ chối chuyến
+      operationId: rejectTrip
+      tags: [Trip]
+      parameters:
+        - $ref: '#/components/parameters/TripId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DriverActionRequest'
+      responses:
+        '200':
+          description: Từ chối chuyến, hệ thống sẽ tự động tìm tài xế khác
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Trip'
+
+  /customers/{customerId}/trips:
+    get:
+      summary: Lấy lịch sử chuyến của khách hàng
+      operationId: listCustomerTrips
+      tags: [Trip]
+      parameters:
+        - $ref: '#/components/parameters/CustomerId'
+      responses:
+        '200':
+          description: Danh sách chuyến đi
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Trip'
+
+components:
+  parameters:
+    TripId:
+      name: tripId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    CustomerId:
+      name: customerId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+  schemas:
+    CreateTripRequest:
+      type: object
+      required: [customerId, pickupLocation, destination, vehicleType]
+      properties:
+        customerId:
+          type: string
+          format: uuid
+        pickupLocation:
+          $ref: '#/components/schemas/Location'
+        destination:
+          $ref: '#/components/schemas/Location'
+        vehicleType:
+          type: string
+          enum: [motorbike, car, van]
+        notes:
+          type: string
+
+    Trip:
+      type: object
+      required: [id, customerId, status, pickupLocation, destination, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        customerId:
+          type: string
+          format: uuid
+        driverId:
+          type: string
+          format: uuid
+          nullable: true
+        status:
+          type: string
+          enum: [requested, searching, assigned, accepted, picked_up, in_progress, completed, cancelled, failed]
+        pickupLocation:
+          $ref: '#/components/schemas/Location'
+        destination:
+          $ref: '#/components/schemas/Location'
+        estimatedFare:
+          type: number
+          format: double
+        actualFare:
+          type: number
+          format: double
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    Location:
+      type: object
+      required: [lat, lng]
+      properties:
+        lat:
+          type: number
+          format: double
+        lng:
+          type: number
+          format: double
+        address:
+          type: string
+
+    DriverOffer:
+      type: object
+      required: [driverId, score, status]
+      properties:
+        driverId:
+          type: string
+          format: uuid
+        score:
+          type: number
+          format: double
+        status:
+          type: string
+          enum: [pending, accepted, rejected]
+        distanceKm:
+          type: number
+          format: double
+
+    AssignDriverRequest:
+      type: object
+      required: [driverId]
+      properties:
+        driverId:
+          type: string
+          format: uuid
+
+    DriverActionRequest:
+      type: object
+      properties:
+        driverId:
+          type: string
+          format: uuid
+        reason:
+          type: string
+
+    TripStatusUpdateRequest:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [searching, assigned, accepted, picked_up, in_progress, completed, cancelled, failed]
+        note:
+          type: string

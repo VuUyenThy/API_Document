@@ -1,0 +1,214 @@
+openapi: 3.0.3
+info:
+  title: CAB System - Notification & Operations API
+  version: 1.0.0
+  description: |
+    API specification for notifications, operational monitoring, report generation, and problem handling.
+    Derived functional requirements: FR-03, FR-08, FR-09, FR-10.
+
+servers:
+  - url: https://api.cab-system.local/v1
+    description: CAB API Server
+
+x-functional-requirements:
+  - FR-03
+  - FR-08
+  - FR-09
+  - FR-10
+
+paths:
+  /notifications:
+    post:
+      summary: Gửi thông báo theo sự kiện
+      operationId: sendNotification
+      tags: [Notification]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NotificationRequest'
+      responses:
+        '201':
+          description: Thông báo gửi thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Notification'
+
+  /operators/{operatorId}/trips:
+    get:
+      summary: Theo dõi chuyến đi của nhân viên vận hành
+      operationId: listTripsForOperator
+      tags: [Operator]
+      parameters:
+        - $ref: '#/components/parameters/OperatorId'
+      responses:
+        '200':
+          description: Danh sách chuyến đi
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TripSummary'
+
+  /operators/{operatorId}/issues:
+    get:
+      summary: Lấy các sự cố vận hành cần xử lý
+      operationId: listOperationalIssues
+      tags: [Operator]
+      parameters:
+        - $ref: '#/components/parameters/OperatorId'
+      responses:
+        '200':
+          description: Danh sách sự cố
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/OperationalIssue'
+
+  /operators/{operatorId}/reports:
+    get:
+      summary: Báo cáo vận hành
+      operationId: getOperationalReport
+      tags: [Operator]
+      parameters:
+        - $ref: '#/components/parameters/OperatorId'
+        - name: fromDate
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: toDate
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Báo cáo vận hành
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OperationalReport'
+
+components:
+  parameters:
+    OperatorId:
+      name: operatorId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+  schemas:
+    NotificationRequest:
+      type: object
+      required: [recipientId, recipientType, eventType, message]
+      properties:
+        recipientId:
+          type: string
+          format: uuid
+        recipientType:
+          type: string
+          enum: [customer, driver, operator]
+        eventType:
+          type: string
+          enum: [trip_created, driver_assigned, driver_arrived, trip_completed, payment_completed, driver_rejected]
+        message:
+          type: string
+        channel:
+          type: string
+          enum: [sms, email, push, in_app]
+
+    Notification:
+      type: object
+      required: [id, recipientId, recipientType, eventType, status]
+      properties:
+        id:
+          type: string
+          format: uuid
+        recipientId:
+          type: string
+          format: uuid
+        recipientType:
+          type: string
+          enum: [customer, driver, operator]
+        eventType:
+          type: string
+        message:
+          type: string
+        status:
+          type: string
+          enum: [queued, sent, failed]
+        sentAt:
+          type: string
+          format: date-time
+
+    TripSummary:
+      type: object
+      required: [tripId, customerId, driverId, status]
+      properties:
+        tripId:
+          type: string
+          format: uuid
+        customerId:
+          type: string
+          format: uuid
+        driverId:
+          type: string
+          format: uuid
+          nullable: true
+        status:
+          type: string
+          enum: [requested, searching, assigned, accepted, picked_up, in_progress, completed, cancelled, failed]
+        createdAt:
+          type: string
+          format: date-time
+
+    OperationalIssue:
+      type: object
+      required: [id, tripId, issueType, severity, status]
+      properties:
+        id:
+          type: string
+          format: uuid
+        tripId:
+          type: string
+          format: uuid
+        issueType:
+          type: string
+          enum: [driver_not_found, payment_failed, trip_cancelled, location_issue]
+        severity:
+          type: string
+          enum: [low, medium, high, critical]
+        status:
+          type: string
+          enum: [open, in_progress, resolved]
+        description:
+          type: string
+
+    OperationalReport:
+      type: object
+      required: [period, totalTrips, completedTrips, cancelledTrips, revenue]
+      properties:
+        period:
+          type: string
+        totalTrips:
+          type: integer
+        completedTrips:
+          type: integer
+        cancelledTrips:
+          type: integer
+        revenue:
+          type: number
+          format: double
+        avgCompletionTimeMinutes:
+          type: number
+          format: double

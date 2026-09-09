@@ -1,0 +1,115 @@
+openapi: 3.0.3
+info:
+  title: CAB System - Rating & Review API
+  version: 1.0.0
+  description: |
+    API specification for customer feedback and driver evaluation after trip completion.
+    Derived from business goals: customer experience improvement and service quality tracking.
+
+servers:
+  - url: https://api.cab-system.local/v1
+    description: CAB API Server
+
+x-functional-requirements:
+  - BR-03
+  - BR-10
+
+paths:
+  /trips/{tripId}/ratings:
+    post:
+      summary: Khách hàng đánh giá tài xế sau chuyến đi
+      operationId: createRating
+      tags: [Rating]
+      parameters:
+        - $ref: '#/components/parameters/TripId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RatingRequest'
+      responses:
+        '201':
+          description: Đánh giá đã được lưu
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Rating'
+
+  /drivers/{driverId}/ratings:
+    get:
+      summary: Xem đánh giá của tài xế
+      operationId: getDriverRatings
+      tags: [Rating]
+      parameters:
+        - $ref: '#/components/parameters/DriverId'
+      responses:
+        '200':
+          description: Danh sách đánh giá
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Rating'
+
+components:
+  parameters:
+    TripId:
+      name: tripId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    DriverId:
+      name: driverId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+  schemas:
+    RatingRequest:
+      type: object
+      required: [customerId, driverId, score, comment]
+      properties:
+        customerId:
+          type: string
+          format: uuid
+        driverId:
+          type: string
+          format: uuid
+        score:
+          type: integer
+          minimum: 1
+          maximum: 5
+        comment:
+          type: string
+
+    Rating:
+      type: object
+      required: [id, tripId, customerId, driverId, score, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        tripId:
+          type: string
+          format: uuid
+        customerId:
+          type: string
+          format: uuid
+        driverId:
+          type: string
+          format: uuid
+        score:
+          type: integer
+          minimum: 1
+          maximum: 5
+        comment:
+          type: string
+        createdAt:
+          type: string
+          format: date-time

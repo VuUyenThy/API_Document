@@ -1,0 +1,110 @@
+openapi: 3.0.3
+info:
+  title: CAB System - Third Party Integration API
+  version: 1.0.0
+  description: |
+    Integration API specification for external payment provider and notification provider.
+    Derived from business requirement BR-08 and system extensibility goals.
+
+servers:
+  - url: https://api.cab-system.local/v1
+    description: CAB API Server
+
+x-functional-requirements:
+  - BR-08
+  - BR-10
+
+paths:
+  /integrations/payments/callback:
+    post:
+      summary: Webhook xác nhận thanh toán từ nhà cung cấp thanh toán
+      operationId: paymentProviderCallback
+      tags: [Integration]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PaymentCallback'
+      responses:
+        '200':
+          description: Callback nhận thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CallbackAck'
+
+  /integrations/notifications/send:
+    post:
+      summary: Gửi thông báo qua nhà cung cấp thông báo
+      operationId: notificationProviderSend
+      tags: [Integration]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NotificationProviderRequest'
+      responses:
+        '200':
+          description: Gửi thông báo thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationProviderResponse'
+
+components:
+  schemas:
+    PaymentCallback:
+      type: object
+      required: [transactionRef, paymentId, status]
+      properties:
+        transactionRef:
+          type: string
+        paymentId:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [paid, failed, refunded]
+        amount:
+          type: number
+          format: double
+        currency:
+          type: string
+
+    CallbackAck:
+      type: object
+      required: [received, message]
+      properties:
+        received:
+          type: boolean
+        message:
+          type: string
+
+    NotificationProviderRequest:
+      type: object
+      required: [recipientId, channel, message]
+      properties:
+        recipientId:
+          type: string
+          format: uuid
+        channel:
+          type: string
+          enum: [sms, email, push]
+        message:
+          type: string
+        eventType:
+          type: string
+
+    NotificationProviderResponse:
+      type: object
+      required: [status, providerId]
+      properties:
+        status:
+          type: string
+          enum: [accepted, rejected, failed]
+        providerId:
+          type: string
+        message:
+          type: string

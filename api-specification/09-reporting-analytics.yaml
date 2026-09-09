@@ -1,0 +1,142 @@
+openapi: 3.0.3
+info:
+  title: CAB System - Reporting & Analytics API
+  version: 1.0.0
+  description: |
+    API specification for operational reporting, business KPIs, and managerial summaries.
+    Derived from business requirement BR-10 and growth goals.
+
+servers:
+  - url: https://api.cab-system.local/v1
+    description: CAB API Server
+
+x-functional-requirements:
+  - BR-10
+
+paths:
+  /reports/summary:
+    get:
+      summary: Báo cáo tổng hợp doanh nghiệp
+      operationId: getBusinessSummaryReport
+      tags: [Reporting]
+      parameters:
+        - name: period
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [day, week, month, quarter]
+      responses:
+        '200':
+          description: Báo cáo tổng hợp
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SummaryReport'
+
+  /reports/trips:
+    get:
+      summary: Báo cáo số lượng chuyến
+      operationId: getTripStatistics
+      tags: [Reporting]
+      responses:
+        '200':
+          description: Thống kê chuyến đi
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TripStatistics'
+
+  /reports/revenue:
+    get:
+      summary: Báo cáo doanh thu
+      operationId: getRevenueReport
+      tags: [Reporting]
+      responses:
+        '200':
+          description: Thống kê doanh thu
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RevenueReport'
+
+  /reports/drivers:
+    get:
+      summary: Báo cáo hiệu suất tài xế
+      operationId: getDriverPerformanceReport
+      tags: [Reporting]
+      responses:
+        '200':
+          description: Hiệu suất tài xế
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DriverPerformance'
+
+components:
+  schemas:
+    SummaryReport:
+      type: object
+      required: [period, totalTrips, completedTrips, cancelledTrips, totalRevenue]
+      properties:
+        period:
+          type: string
+        totalTrips:
+          type: integer
+        completedTrips:
+          type: integer
+        cancelledTrips:
+          type: integer
+        totalRevenue:
+          type: number
+          format: double
+        noDriverTrips:
+          type: integer
+
+    TripStatistics:
+      type: object
+      required: [requested, completed, cancelled, avgDurationMinutes]
+      properties:
+        requested:
+          type: integer
+        completed:
+          type: integer
+        cancelled:
+          type: integer
+        avgDurationMinutes:
+          type: number
+          format: double
+
+    RevenueReport:
+      type: object
+      required: [totalRevenue, cashRevenue, electronicRevenue]
+      properties:
+        totalRevenue:
+          type: number
+          format: double
+        cashRevenue:
+          type: number
+          format: double
+        electronicRevenue:
+          type: number
+          format: double
+
+    DriverPerformance:
+      type: object
+      required: [driverId, fullName, tripCount, completionRate, avgRating]
+      properties:
+        driverId:
+          type: string
+          format: uuid
+        fullName:
+          type: string
+        tripCount:
+          type: integer
+        completionRate:
+          type: number
+          format: double
+        avgRating:
+          type: number
+          format: double

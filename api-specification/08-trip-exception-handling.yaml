@@ -1,0 +1,154 @@
+openapi: 3.0.3
+info:
+  title: CAB System - Trip Exception Handling API
+  version: 1.0.0
+  description: |
+    API specification for handling trip failures, alternative driver assignment, and operational issue recovery.
+    Derived from business requirements: BR-07, BR-10.
+
+servers:
+  - url: https://api.cab-system.local/v1
+    description: CAB API Server
+
+x-functional-requirements:
+  - BR-07
+  - BR-10
+
+paths:
+  /trips/{tripId}/fallback-driver:
+    post:
+      summary: Tìm tài xế thay thế khi tài xế bị từ chối hoặc không phản hồi
+      operationId: findFallbackDriver
+      tags: [TripException]
+      parameters:
+        - $ref: '#/components/parameters/TripId'
+      responses:
+        '200':
+          description: Tài xế thay thế được đề xuất
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FallbackResult'
+
+  /trips/{tripId}/issues:
+    post:
+      summary: Gửi sự cố cho nhân viên vận hành
+      operationId: createTripIssue
+      tags: [TripException]
+      parameters:
+        - $ref: '#/components/parameters/TripId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TripIssueRequest'
+      responses:
+        '201':
+          description: Sự cố được ghi nhận
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TripIssue'
+
+  /issues/{issueId}/resolve:
+    patch:
+      summary: Xử lý sự cố chuyến đi
+      operationId: resolveIssue
+      tags: [TripException]
+      parameters:
+        - $ref: '#/components/parameters/IssueId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IssueResolutionRequest'
+      responses:
+        '200':
+          description: Sự cố đã được xử lý
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TripIssue'
+
+components:
+  parameters:
+    TripId:
+      name: tripId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    IssueId:
+      name: issueId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+  schemas:
+    FallbackResult:
+      type: object
+      required: [tripId, driverId, status]
+      properties:
+        tripId:
+          type: string
+          format: uuid
+        driverId:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [assigned, pending, unavailable]
+        message:
+          type: string
+
+    TripIssueRequest:
+      type: object
+      required: [issueType, description]
+      properties:
+        issueType:
+          type: string
+          enum: [driver_not_found, driver_cancelled, payment_failed, location_issue]
+        description:
+          type: string
+        severity:
+          type: string
+          enum: [low, medium, high, critical]
+
+    TripIssue:
+      type: object
+      required: [id, tripId, issueType, severity, status]
+      properties:
+        id:
+          type: string
+          format: uuid
+        tripId:
+          type: string
+          format: uuid
+        issueType:
+          type: string
+        severity:
+          type: string
+        status:
+          type: string
+          enum: [open, in_progress, resolved]
+        createdAt:
+          type: string
+          format: date-time
+
+    IssueResolutionRequest:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [resolved, in_progress]
+        resolvedBy:
+          type: string
+          format: uuid
+        note:
+          type: string

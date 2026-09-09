@@ -1,0 +1,229 @@
+openapi: 3.0.3
+info:
+  title: CAB System - Admin & Operator Management API
+  version: 1.0.0
+  description: |
+    API specification for operational management, account administration, and role-controlled system actions.
+    Derived from business requirements: BR-05, BR-06, BR-10.
+
+servers:
+  - url: https://api.cab-system.local/v1
+    description: CAB API Server
+
+x-functional-requirements:
+  - BR-05
+  - BR-06
+  - BR-10
+
+paths:
+  /operators:
+    get:
+      summary: Danh sách nhân viên vận hành
+      operationId: listOperators
+      tags: [OperatorManagement]
+      responses:
+        '200':
+          description: Danh sách nhân viên vận hành
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Operator'
+    post:
+      summary: Tạo tài khoản nhân viên vận hành
+      operationId: createOperator
+      tags: [OperatorManagement]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateOperatorRequest'
+      responses:
+        '201':
+          description: Tạo thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Operator'
+
+  /operators/{operatorId}:
+    get:
+      summary: Chi tiết nhân viên vận hành
+      operationId: getOperatorById
+      tags: [OperatorManagement]
+      parameters:
+        - $ref: '#/components/parameters/OperatorId'
+      responses:
+        '200':
+          description: Chi tiết nhân viên
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Operator'
+    put:
+      summary: Cập nhật nhân viên vận hành
+      operationId: updateOperator
+      tags: [OperatorManagement]
+      parameters:
+        - $ref: '#/components/parameters/OperatorId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateOperatorRequest'
+      responses:
+        '200':
+          description: Cập nhật thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Operator'
+
+  /customers:
+    get:
+      summary: Danh sách khách hàng
+      operationId: listCustomers
+      tags: [CustomerManagement]
+      responses:
+        '200':
+          description: Danh sách khách hàng
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CustomerSummary'
+
+  /drivers:
+    get:
+      summary: Danh sách tài xế
+      operationId: listDrivers
+      tags: [DriverManagement]
+      responses:
+        '200':
+          description: Danh sách tài xế
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DriverSummary'
+
+  /roles:
+    get:
+      summary: Danh sách quyền hệ thống
+      operationId: listRoles
+      tags: [Authorization]
+      responses:
+        '200':
+          description: Danh sách quyền
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Role'
+
+components:
+  parameters:
+    OperatorId:
+      name: operatorId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+  schemas:
+    CreateOperatorRequest:
+      type: object
+      required: [fullName, email, password, role]
+      properties:
+        fullName:
+          type: string
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          format: password
+        role:
+          type: string
+          enum: [operator, admin]
+
+    UpdateOperatorRequest:
+      type: object
+      properties:
+        fullName:
+          type: string
+        email:
+          type: string
+          format: email
+        status:
+          type: string
+          enum: [active, inactive, suspended]
+
+    Operator:
+      type: object
+      required: [id, fullName, email, role, status]
+      properties:
+        id:
+          type: string
+          format: uuid
+        fullName:
+          type: string
+        email:
+          type: string
+        role:
+          type: string
+          enum: [operator, admin]
+        status:
+          type: string
+          enum: [active, inactive, suspended]
+
+    CustomerSummary:
+      type: object
+      required: [id, fullName, phone, status]
+      properties:
+        id:
+          type: string
+          format: uuid
+        fullName:
+          type: string
+        phone:
+          type: string
+        status:
+          type: string
+          enum: [active, inactive, suspended]
+
+    DriverSummary:
+      type: object
+      required: [id, fullName, status, availability]
+      properties:
+        id:
+          type: string
+          format: uuid
+        fullName:
+          type: string
+        status:
+          type: string
+          enum: [approved, pending, suspended]
+        availability:
+          type: string
+          enum: [available, unavailable, busy]
+
+    Role:
+      type: object
+      required: [id, name, permissions]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        permissions:
+          type: array
+          items:
+            type: string
